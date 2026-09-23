@@ -100,21 +100,27 @@ public class BlockFilterNotificationHandler : INotificationAsyncHandler<RemodelB
         }
     }
 
-    private Guid? ResolveRootNodeKey(string? contentId)
+    /// <summary>
+    /// Resolves the root node for a content item by finding its ancestor within the specified level range.
+    /// Allows rules to be scoped not just to level-1 (sites) but also to intermediate levels (sections/subsites).
+    /// Returns the first ancestor matching the criteria; if multiple levels match, the closest parent is returned.
+    /// </summary>
+    /// <param name="contentId">The content key/ID to resolve</param>
+    /// <param name="maxLevel">Maximum level to search (default 2). Set to 1 for site-root-only filtering.</param>
+    private Guid? ResolveRootNodeKey(string? contentId, int maxLevel = 2)
     {
         if(!Guid.TryParse(contentId, out var contentKey))
             return null;
-        
+
         if(!_documentNavigationQueryService.TryGetAncestorsOrSelfKeys(contentKey, out var keys))
-        return null;
+            return null;
 
         foreach(var key in keys)
         {
-            if(_documentNavigationQueryService.TryGetLevel(key, out var level) && level == 1)
+            if(_documentNavigationQueryService.TryGetLevel(key, out var level) && level >= 1 && level <= maxLevel)
                 return key;
         }
 
         return null;
-
     }
 }
